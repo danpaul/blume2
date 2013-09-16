@@ -1,0 +1,36 @@
+allow definition of absolute URLs durring site generation
+
+recognize all the following when searching page: relative, root relative, absolute
+	resolve all to root relative?
+
+confirm nokogiri is closing properly
+
+allow an array of urls
+
+add ignore directory for things like media files?
+
+figure out the correct way to specify neat urls
+
+create command line tool for site generation
+
+create a "turbolinks" option. if enabled, the user would need to define a 'content id' in the body of each page. durring compilation, in addition to the full page, a partial for each page of the 'content div' would also be generated and saved with a standard prefix. a JS file would be included that would disable all internal links and dynamically load/replace only the content section of the page when the user clicks these links.
+
+develop a lookahead client side cache mechanism and data store. this would involve json scanning each site for internal links "viewable" from current and building a cache of this content so the users next click results in an "instant" page update. a base set of cache objects could reside in a compressed/uncompressed json document in the site's root
+
+include the option to have the posts stored in mongo so a cms could be developed as a 'front end'.
+
+include ability programaticly transform front matter
+
+create command line usage for site generation
+
+create config file?
+
+
+DREAM
+
+versioning system for content allowing to roll forward/back (maybe just use git)
+
+
+DONE
+
+remove any Mongo dependencies/interaction by reading all content into a global object durring development
