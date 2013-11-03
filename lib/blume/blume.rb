@@ -64,7 +64,8 @@ class Blume
 	def parse(file, path)
 		post = YAML.load_file(file)
 		post['type'] = path.sub(@content_directory,'').gsub(/\//, '-')[1..-1]
-		post['title'] = File.basename(file,File.extname(file))[11..-1]
+		# post['title'] = File.basename(file,File.extname(file))[11..-1]
+		post['title'] = File.basename(file,File.extname(file))[11..-1].gsub('-', ' ')
 		post['date_time'] = Date.parse(File.basename(file, File.extname(file))[0..11]).to_time
 		post['date_title'] = post['date_time'].strftime("%Y-%m-%d") + '-' + post['title']
 		body = ""
