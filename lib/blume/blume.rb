@@ -67,7 +67,7 @@ class Blume
 		# post['title'] = File.basename(file,File.extname(file))[11..-1]
 		post['title'] = File.basename(file,File.extname(file))[11..-1].gsub('-', ' ')
 		post['date_time'] = Date.parse(File.basename(file, File.extname(file))[0..11]).to_time
-		post['date_title'] = post['date_time'].strftime("%Y-%m-%d") + '-' + post['title']
+		post['date_title'] = post['date_time'].strftime("%Y-%m-%d") + '-' + (post['title'].gsub(' ', '-').downcase)
 		body = ""
 		if @living_dangerously
 			body = evil_mark(File.open(file,'rb').read.sub(/\-\-\-.*\-\-\-/m,'').lstrip)
