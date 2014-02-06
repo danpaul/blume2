@@ -8,5 +8,7 @@ require 'set'
 require 'yaml'
 require 'zlib'
 
+require 'uri'
+
 require 'blume/blume.rb'
 require 'blume/pilgrim.rb'
