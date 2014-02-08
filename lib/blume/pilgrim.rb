@@ -1,4 +1,5 @@
 #need to search for all src as well as href for links
+#look for links as well (should be searching for hrefs and src)
 
 #clean up abs url
 
@@ -6,9 +7,8 @@
 class Pilgrim
 	def initialize(root_url, site_directory, assets, target_url = false)
 
-
-@asset_folders = ['css', 'js', 'img', 'audio']
-
+@asset_folders = ['/css', '/js', '/img', '/audio']
+@source_directory = '/Users/danielbreczinski/Desktop/working_code/dpb_me'
 # assets = 'assets'
 # @target_url = 'http://dpb.me'
 # @target_url = 'localhost:8888/site'
@@ -17,19 +17,28 @@ class Pilgrim
 @base_url = 'http://localhost:4567'
 @asset_urls = [];
 
-@asset_folders.each{|a| @asset_urls <<  @base_url + '/assets'}
+#@asset_folders.each{|a| @asset_urls <<  @base_url + '/assets'}
 
 
 		@root_url = root_url
 		@site_directory = site_directory
 		@assets = assets
 		# @target_url = target_url
-		@asset_folders = Dir.glob(@assets).
-			reject{|f| not File.directory?(f)}.
-			map{|d| "/" + d + "/"}
+		# @asset_folders = Dir.glob(@assets).
+		# 	reject{|f| not File.directory?(f)}.
+		# 	map{|d| "/" + d + "/"}
+
+		@asset_folders.each do |folder|
+			@asset_urls << absolute_url(@base_url, folder)
+		end
+# puts 'foo'
+# puts @asset_urls
 	end
 
 	def generate(compression_on = true)
+
+puts @assets;
+
 		visited = Set.new
 		unvisited = Set.new [@root_url]
 		FileUtils.rm_rf(@site_directory)
@@ -37,48 +46,43 @@ class Pilgrim
 			parse_page(visited, unvisited)
 		end
 		# FileUtils.cp_r(Dir[@assets + "/*"], @site_directory)
-		FileUtils.cp_r(Dir[@assets], @site_directory)
+		# FileUtils.cp_r(Dir[@assets], @site_directory)
+
+@asset_folders.each do |folder|
+
+puts @source_directory + '/assets' + folder
+# puts @site_directory + folder
+	FileUtils.mkdir(@site_directory + folder)
+	
+	# FileUtils.cp_r(Dir[@source_directory + '/assets' + folder + "/*"], @site_directory + folder)
+	FileUtils.cp_r(Dir[@source_directory + '/public' + folder], @site_directory)
+end
+
+
 		if compression_on then compress end
 	end
 	def parse_page(visited, unvisited)
 
-# puts 'asdf'
-
 		current = unvisited.take(1)
 		visited << current[0]
 		page = Nokogiri::HTML(open(current[0]))
-		page.css('a').each do |link|
 
-
-# puts absolute_url(@base_url, link['href'])
-# puts @asset_base_url
-
-			# is_an_asset = @asset_folders.any?{|d| link['href'].start_with? d}
-			# is_an_asset = absolute_url(@base_url, link['href']).start_with?(@base_url)
-			is_an_asset = is_asset(absolute_url(@base_url, link['href']))
-
-
-if(is_an_asset)
-	puts '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-end
-			# @asset_folders.any?{|d| link['href'].start_with? d}
-
-
-# if is_an_asset
-# 	puts link[]
-# # 	puts '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-# # 	exit()
-# end
-
-
-			if link['href'].start_with? "/"
-				unless visited.include? @root_url + link['href'] or is_an_asset
-					unvisited << @root_url + link['href']
+		page.css('[href]').each do |link|
+			absolute_link = absolute_url(@base_url, link['href']);
+			if in_domain(absolute_link)
+				unless is_asset(absolute_url(@base_url, link['href']))
+					unless visited.include? absolute_link
+						unvisited << absolute_link
+					end
 				end
-				if @target_url
-					link['href'] = @target_url + link['href']
-					link['href'] = URI.join(@target_url, link['href'])
-				end
+				link['href'] = absolute_link.sub(@root_url, @target_url);
+			end
+		end
+
+		page.css('[src]').each do |link|
+			absolute_src = absolute_url(@base_url, link['src']);
+			if in_domain(absolute_src)
+				link['src'] = absolute_src.sub(@root_url, @target_url);
 			end
 		end
 
@@ -110,6 +114,14 @@ end
 		end
 		return false
 	end
+
+	def in_domain(url)
+		if url.start_with?(@base_url)
+			return true
+		end
+		return false
+	end
+
 
 
 
