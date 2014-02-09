@@ -4,6 +4,9 @@
 #clean up abs url
 
 #"assets" is file path
+
+#auto detect assets and download them automatically
+
 class Pilgrim
 	def initialize(root_url, site_directory, assets, target_url = false)
 
@@ -37,7 +40,7 @@ class Pilgrim
 
 	def generate(compression_on = true)
 
-puts @assets;
+# puts @assets;
 
 		visited = Set.new
 		unvisited = Set.new [@root_url]
@@ -45,18 +48,11 @@ puts @assets;
 		while !unvisited.empty?
 			parse_page(visited, unvisited)
 		end
-		# FileUtils.cp_r(Dir[@assets + "/*"], @site_directory)
-		# FileUtils.cp_r(Dir[@assets], @site_directory)
 
-@asset_folders.each do |folder|
-
-puts @source_directory + '/assets' + folder
-# puts @site_directory + folder
-	FileUtils.mkdir(@site_directory + folder)
-	
-	# FileUtils.cp_r(Dir[@source_directory + '/assets' + folder + "/*"], @site_directory + folder)
-	FileUtils.cp_r(Dir[@source_directory + '/public' + folder], @site_directory)
-end
+		# @asset_folders.each do |folder|
+		# 	FileUtils.mkdir(@site_directory + folder)
+		# 	FileUtils.cp_r(Dir[@source_directory + '/public' + folder], @site_directory)
+		# end
 
 
 		if compression_on then compress end
@@ -70,25 +66,87 @@ end
 		page.css('[href]').each do |link|
 			absolute_link = absolute_url(@base_url, link['href']);
 			if in_domain(absolute_link)
-				unless is_asset(absolute_url(@base_url, link['href']))
+
+
+# puts File.extname(URI.parse(absolute_link).path)
+
+				if is_css absolute_link
+					copy_from_url(absolute_link)
+					#copy file
+					#add to vis
+
+				else
 					unless visited.include? absolute_link
 						unvisited << absolute_link
 					end
 				end
+
+
+
+				# unless is_asset(absolute_url(@base_url, link['href']))
+				# 	unless visited.include? absolute_link
+				# 		unvisited << absolute_link
+				# 	end
+				# end
 				link['href'] = absolute_link.sub(@root_url, @target_url);
 			end
 		end
 
+
 		page.css('[src]').each do |link|
-			absolute_src = absolute_url(@base_url, link['src']);
+			absolute_src = absolute_url(@base_url, link['src'])
 			if in_domain(absolute_src)
+				copy_from_url(absolute_src)
+
+# 				dest_path = @site_directory + (get_root_relative_path absolute_src)
+# 				unless File.exists? dest_path
+
+
+# dirname = File.dirname(dest_path)
+# puts dirname
+# unless File.directory?(dirname)
+#   FileUtils.mkdir_p(dirname)
+# end
+
+# open(dest_path, 'wb') do |file|
+#   file << open(absolute_src).read
+# end
+					
+# 				end
+
 				link['src'] = absolute_src.sub(@root_url, @target_url);
 			end
 		end
 
+
+
+		# page.css('[src]').each do |link|
+		# 	absolute_src = absolute_url(@base_url, link['src']);
+		# 	if in_domain(absolute_src)
+		# 		link['src'] = absolute_src.sub(@root_url, @target_url);
+		# 	end
+		# end
+
 		save_file(page, current)
 		unvisited.subtract(current)
 	end
+
+
+
+	def copy_from_url(url)
+		dest_path = @site_directory + get_root_relative_path(url)
+		unless File.exists? dest_path
+			# absolute_src = absolute_url(@base_url, link['src']);
+			dirname = File.dirname(dest_path)
+			unless File.directory?(dirname)
+			  FileUtils.mkdir_p(dirname)
+			end
+			open(dest_path, 'wb') do |file|
+			  file << open(url).read
+			end
+		end
+	end
+
 
 
 	def compress()
@@ -122,15 +180,18 @@ end
 		return false
 	end
 
-
-
-
-
+	def is_css(url)
+		return File.extname(URI.parse(url).path).downcase == '.css'
+	end
 
 	def save_file(page, file)
 		path = @site_directory + file[0].sub(@root_url, "/")
 		FileUtils.mkpath(path)
 		File.open(path + "/index.html", "w"){|f| f.write(page.to_html)}
+	end
+
+	def get_root_relative_path(absolute_url)
+		return absolute_url.sub(@root_url, '')
 	end
 
 	def absolute_url(base, url)
