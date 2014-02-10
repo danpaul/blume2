@@ -15,7 +15,7 @@ class Pilgrim
 # assets = 'assets'
 # @target_url = 'http://dpb.me'
 # @target_url = 'localhost:8888/site'
-@target_url = 'http://localhost:8888/site'
+@target_url = 'http://dpb.me'
 # @target_url = false
 @base_url = 'http://localhost:4567'
 @asset_urls = [];
@@ -26,117 +26,54 @@ class Pilgrim
 		@root_url = root_url
 		@site_directory = site_directory
 		@assets = assets
-		# @target_url = target_url
-		# @asset_folders = Dir.glob(@assets).
-		# 	reject{|f| not File.directory?(f)}.
-		# 	map{|d| "/" + d + "/"}
-
 		@asset_folders.each do |folder|
 			@asset_urls << absolute_url(@base_url, folder)
 		end
-# puts 'foo'
-# puts @asset_urls
 	end
 
 	def generate(compression_on = true)
-
-# puts @assets;
-
 		visited = Set.new
 		unvisited = Set.new [@root_url]
 		FileUtils.rm_rf(@site_directory)
 		while !unvisited.empty?
 			parse_page(visited, unvisited)
 		end
-
-		# @asset_folders.each do |folder|
-		# 	FileUtils.mkdir(@site_directory + folder)
-		# 	FileUtils.cp_r(Dir[@source_directory + '/public' + folder], @site_directory)
-		# end
-
-
 		if compression_on then compress end
 	end
-	def parse_page(visited, unvisited)
 
+	def parse_page(visited, unvisited)
 		current = unvisited.take(1)
 		visited << current[0]
 		page = Nokogiri::HTML(open(current[0]))
-
 		page.css('[href]').each do |link|
 			absolute_link = absolute_url(@base_url, link['href']);
 			if in_domain(absolute_link)
-
-
-# puts File.extname(URI.parse(absolute_link).path)
-
 				if is_css absolute_link
 					copy_from_url(absolute_link)
-					#copy file
-					#add to vis
-
 				else
 					unless visited.include? absolute_link
-						unvisited << absolute_link
+						unless is_asset absolute_link
+							unvisited << absolute_link
+						end
 					end
 				end
-
-
-
-				# unless is_asset(absolute_url(@base_url, link['href']))
-				# 	unless visited.include? absolute_link
-				# 		unvisited << absolute_link
-				# 	end
-				# end
 				link['href'] = absolute_link.sub(@root_url, @target_url);
 			end
 		end
-
-
 		page.css('[src]').each do |link|
 			absolute_src = absolute_url(@base_url, link['src'])
 			if in_domain(absolute_src)
 				copy_from_url(absolute_src)
-
-# 				dest_path = @site_directory + (get_root_relative_path absolute_src)
-# 				unless File.exists? dest_path
-
-
-# dirname = File.dirname(dest_path)
-# puts dirname
-# unless File.directory?(dirname)
-#   FileUtils.mkdir_p(dirname)
-# end
-
-# open(dest_path, 'wb') do |file|
-#   file << open(absolute_src).read
-# end
-					
-# 				end
-
 				link['src'] = absolute_src.sub(@root_url, @target_url);
 			end
 		end
-
-
-
-		# page.css('[src]').each do |link|
-		# 	absolute_src = absolute_url(@base_url, link['src']);
-		# 	if in_domain(absolute_src)
-		# 		link['src'] = absolute_src.sub(@root_url, @target_url);
-		# 	end
-		# end
-
 		save_file(page, current)
 		unvisited.subtract(current)
 	end
 
-
-
 	def copy_from_url(url)
 		dest_path = @site_directory + get_root_relative_path(url)
 		unless File.exists? dest_path
-			# absolute_src = absolute_url(@base_url, link['src']);
 			dirname = File.dirname(dest_path)
 			unless File.directory?(dirname)
 			  FileUtils.mkdir_p(dirname)
@@ -146,8 +83,6 @@ class Pilgrim
 			end
 		end
 	end
-
-
 
 	def compress()
 		Find.find(@site_directory) do |f_name|
@@ -185,9 +120,33 @@ class Pilgrim
 	end
 
 	def save_file(page, file)
-		path = @site_directory + file[0].sub(@root_url, "/")
-		FileUtils.mkpath(path)
-		File.open(path + "/index.html", "w"){|f| f.write(page.to_html)}
+
+
+# path = @site_directory + (file[0].sub(@root_url, ''))
+# unless File.exists? path
+# 	dirname = File.dirname(path)
+
+# puts '!!!!!!!!!!!!!!!';
+# puts path
+# puts dirname
+# 	unless File.directory?(path)
+# 	  FileUtils.mkpath(path)
+# 	end
+# 	open(path + 'index.html', 'w') do |file|
+# 		file.write(page.to_html) 
+# 	end
+
+
+	path = @site_directory + file[0].sub(@root_url, "/")
+	FileUtils.mkpath(path)
+	File.open(path + "/index.html", "w"){|f| f.write(page.to_html)}
+# end
+
+
+
+# puts path
+		# FileUtils.mkpath(path)
+		# File.open(path + "/index.html", "w"){|f| f.write(page.to_html)}
 	end
 
 	def get_root_relative_path(absolute_url)
